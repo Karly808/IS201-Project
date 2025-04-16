@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Game</title>
+  <title>Kōnane</title>
   <style>
-    /* General Reset & Font */
     body {
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #fde3f6, #ffffff);
+      background: linear-gradient(135deg, #b3e5fc, #ffffff);
       color: #333;
       text-align: center;
       display: flex;
@@ -18,20 +17,11 @@
       min-height: 100vh;
     }
 
-    /* Navigation Bar */
     nav {
       background-color: #2c3e50;
       padding: 1rem 2rem;
     }
 
-    /* Flex container for navbar */
-    #mainNav .container {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-    }
-
-    /* Navbar Links */
     .navbar-nav {
       list-style: none;
       display: flex;
@@ -55,11 +45,6 @@
       color: #bdc3c7;
     }
 
-    .navbar-toggler {
-      display: none;
-    }
-
-    /* Main Game Content */
     .main-content {
       flex: 1;
       display: flex;
@@ -72,33 +57,49 @@
       padding: 2rem;
       background: rgba(255, 255, 255, 0.8);
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     #board {
       display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-template-rows: repeat(3, 100px);
-      gap: 10px;
+      grid-template-columns: repeat(7, 60px);
+      grid-template-rows: repeat(6, 60px);
+      gap: 5px;
       justify-content: center;
       margin-bottom: 1rem;
     }
 
     .cell {
-      background-color: #fff;
-      border: 2px solid #ccc;
-      font-size: 2rem;
-      font-weight: bold;
+      width: 60px;
+      height: 60px;
+      background-color: #b3e5fc;
+      border: 1px solid #888;
+      border-radius: 4px;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       cursor: pointer;
-      border-radius: 8px;
-      transition: background-color 0.2s ease;
+      position: relative;
     }
 
-    .cell:hover {
-      background-color: #f9f9f9;
+    .black-piece {
+      background-color: black;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+    }
+
+    .white-piece {
+      background-color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      border: 2px solid black;
+    }
+
+    #message {
+      font-weight: bold;
+      margin: 1rem 0;
     }
 
     button {
@@ -114,105 +115,308 @@
     button:hover {
       background-color: #1c5985;
     }
-
-    #message {
-      margin: 1rem 0;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
-    <div class="container">
-      <ul class="navbar-nav">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="scratch.html">Interests</a></li>
-        <li><a href="webapp.html">Game</a></li>
-      </ul>
-    </div>
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <ul class="navbar-nav">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="scratch.html">Interests</a></li>
+      <li><a href="webapp.html">Game</a></li>
+    </ul>
   </nav>
-
   <div class="main-content">
     <div class="game-container">
-      <h2>Tic Tac Toe vs. Computer</h2>
+      <h2>Kōnane (Hawaiian Checkers)</h2>
+      <div id="instructions">
+        <p>To start, remove one of your pieces (black) from the board. They <strong>CANNOT</strong> be on the edge of the board unless it is a corner piece.</p>
+        <p>The computer will take one of their pieces adjacent to yours off the board as well.</p>
+        <p>From there, players will take turns to jump and capture at least one of the opponent's pieces.</p>
+        <p>You must jump 2 spaces away from your original position and capture a piece at the same time.</p>
+        <p>You can only move vertically and horizontally.</p>
+        <p>You can continue to capture multiple pieces if you are moving in the same direction.</p>
+        <p>The game ends when a player can't capture a piece from their opponent and that player loses the game.</p>
+      </div>
       <div id="board"></div>
       <div id="message"></div>
-      <button onclick="resetGame()">Restart Game</button>
+      <button onclick="initGame()">Restart Game</button>
     </div>
   </div>
 
   <script>
-    const board = document.getElementById('board');
-    const message = document.getElementById('message');
-    let cells = [];
-    let currentPlayer = 'X';
-    let gameOver = false;
+    const ROWS = 6;
+    const COLS = 7;
+    const boardEl = document.getElementById("board");
+    const message = document.getElementById("message");
+    let board = [];
+    let selected = null;
+    let currentPlayer = "black";
+    let firstMoveDone = false;
+    let whiteFirstMoveDone = false;
+    let lastRemoved = null;
+    let jumpDirection = null;
 
-    function createBoard() {
-      board.innerHTML = '';
-      cells = [];
-      gameOver = false;
-      message.textContent = '';
-      for (let i = 0; i < 9; i++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.dataset.index = i;
-        cell.addEventListener('click', () => playerMove(i));
-        board.appendChild(cell);
-        cells.push('');
+    function initGame() {
+      board = [];
+      boardEl.innerHTML = "";
+      selected = null;
+      currentPlayer = "black";
+      firstMoveDone = false;
+      whiteFirstMoveDone = false;
+      lastRemoved = null;
+      jumpDirection = null;
+      message.textContent = "Your turn: remove one piece";
+
+      for (let r = 0; r < ROWS; r++) {
+        let row = [];
+        for (let c = 0; c < COLS; c++) {
+          let color = (r + c) % 2 === 0 ? "black" : "white";
+          row.push(color);
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          cell.addEventListener("click", handleCellClick);
+          boardEl.appendChild(cell);
+        }
+        board.push(row);
+      }
+      render();
+    }
+
+    function handleCellClick(e) {
+      const row = +e.currentTarget.dataset.row;
+      const col = +e.currentTarget.dataset.col;
+      if (!firstMoveDone) {
+        if (board[row][col] === "black") {
+          board[row][col] = null;
+          firstMoveDone = true;
+          lastRemoved = [row, col];
+          currentPlayer = "white";
+          render();
+          setTimeout(computerFirstMove, 500);
+        }
+        return;
+      }
+
+      if (!whiteFirstMoveDone && currentPlayer === "white") return;
+      if (!whiteFirstMoveDone && currentPlayer === "black") return;
+
+      if (selected) {
+        const [sr, sc] = selected;
+        const dr = row - sr;
+        const dc = col - sc;
+
+        if ((Math.abs(dr) === 2 && dc === 0) || (Math.abs(dc) === 2 && dr === 0)) {
+          if (!jumpDirection) jumpDirection = [Math.sign(dr), Math.sign(dc)];
+          if (jumpDirection[0] !== Math.sign(dr) || jumpDirection[1] !== Math.sign(dc)) return;
+
+          const mr = sr + dr / 2;
+          const mc = sc + dc / 2;
+
+          if (board[row][col] === null && board[mr][mc] && board[mr][mc] !== currentPlayer) {
+            board[row][col] = currentPlayer;
+            board[sr][sc] = null;
+            board[mr][mc] = null;
+            selected = [row, col];
+            render();
+            if (!canJump(row, col, jumpDirection)) {
+              selected = null;
+              jumpDirection = null;
+              currentPlayer = currentPlayer === "black" ? "white" : "black";
+              if (checkGameEnd()) return;
+              if (currentPlayer === "white") setTimeout(computerTurn, 500);
+              else message.textContent = "Your turn";
+            }
+          }
+        }
+      } else {
+        if (board[row][col] === currentPlayer) {
+          selected = [row, col];
+        }
       }
     }
 
-    function playerMove(index) {
-      if (gameOver || cells[index] !== '') return;
-      cells[index] = 'X';
-      board.children[index].textContent = 'X';
-      if (checkWinner('X')) {
-        message.textContent = 'You win!';
-        gameOver = true;
-        return;
-      }
-      if (cells.every(cell => cell !== '')) {
-        message.textContent = 'It\'s a draw!';
-        gameOver = true;
-        return;
-      }
-      setTimeout(computerMove, 400);
-    }
-
-    function computerMove() {
-      if (gameOver) return;
-      let emptyIndices = cells.map((v, i) => v === '' ? i : null).filter(v => v !== null);
-      let choice = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-      cells[choice] = 'O';
-      board.children[choice].textContent = 'O';
-      if (checkWinner('O')) {
-        message.textContent = 'Computer wins!';
-        gameOver = true;
-        return;
-      }
-      if (cells.every(cell => cell !== '')) {
-        message.textContent = 'It\'s a draw!';
-        gameOver = true;
-      }
-    }
-
-    function checkWinner(player) {
-      const winPatterns = [
-        [0,1,2], [3,4,5], [6,7,8],
-        [0,3,6], [1,4,7], [2,5,8],
-        [0,4,8], [2,4,6]
+    function computerFirstMove() {
+      const [br, bc] = lastRemoved;
+      const directions = [
+        [0, 1], [0, -1], [1, 0], [-1, 0]
       ];
-      return winPatterns.some(pattern => 
-        pattern.every(i => cells[i] === player)
-      );
+      for (let [dr, dc] of directions) {
+        const nr = br + dr;
+        const nc = bc + dc;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+          if (board[nr][nc] === "white") {
+            board[nr][nc] = null;
+            whiteFirstMoveDone = true;
+            currentPlayer = "black";
+            render();
+            message.textContent = "Your turn";
+            return;
+          }
+        }
+      }
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (board[r][c] === "white") {
+            board[r][c] = null;
+            whiteFirstMoveDone = true;
+            currentPlayer = "black";
+            render();
+            message.textContent = "Your turn";
+            return;
+          }
+        }
+      }
     }
 
-    function resetGame() {
-      createBoard();
+    function computerTurn() {
+  if (!whiteFirstMoveDone) {
+    for (let [dr, dc] of [[0,1],[1,0],[-1,0],[0,-1]]) {
+      const adjR = lastRemovedBlack[0] + dr;
+      const adjC = lastRemovedBlack[1] + dc;
+      if (
+        adjR >= 0 && adjR < ROWS &&
+        adjC >= 0 && adjC < COLS &&
+        board[adjR][adjC] === "white"
+      ) {
+        board[adjR][adjC] = null;
+        whiteFirstMoveDone = true;
+        currentPlayer = "black";
+        render();
+        message.textContent = "Your turn";
+        return;
+      }
+    }
+  }
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c] === "white") {
+        const dirs = [
+          [0, 2], [0, -2], [2, 0], [-2, 0]
+        ];
+        for (let [dr, dc] of dirs) {
+          const nr = r + dr;
+          const nc = c + dc;
+          const mr = r + dr / 2;
+          const mc = c + dc / 2;
+          if (
+            nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
+            board[nr][nc] === null &&
+            board[mr][mc] === "black"
+          ) {
+            board[nr][nc] = "white";
+            board[r][c] = null;
+            board[mr][mc] = null;
+            render();
+
+            // Continue jumping in same direction
+            let newR = nr;
+            let newC = nc;
+            while (true) {
+              const nextR = newR + dr;
+              const nextC = newC + dc;
+              const jumpOverR = newR + dr / 2;
+              const jumpOverC = newC + dc / 2;
+
+              if (
+                nextR >= 0 && nextR < ROWS &&
+                nextC >= 0 && nextC < COLS &&
+                board[nextR][nextC] === null &&
+                board[jumpOverR][jumpOverC] === "black"
+              ) {
+                board[nextR][nextC] = "white";
+                board[jumpOverR][jumpOverC] = null;
+                board[newR][newC] = null;
+                newR = nextR;
+                newC = nextC;
+              } else {
+                break;
+              }
+            }
+
+            currentPlayer = "black";
+            render();
+            message.textContent = "Your turn";
+
+            // ✅ Call checkGameEnd after computer finishes
+            checkGameEnd();
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  // If no move made
+  message.textContent = "You win!";
+  alert("You win!");
+}
+
+
+    function canJump(r, c, direction = null) {
+      const dirs = [
+        [0, 2], [0, -2], [2, 0], [-2, 0]
+      ];
+      return dirs.some(([dr, dc]) => {
+        const nr = r + dr;
+        const nc = c + dc;
+        const mr = r + dr / 2;
+        const mc = c + dc / 2;
+        if (direction && (direction[0] !== Math.sign(dr) || direction[1] !== Math.sign(dc))) return false;
+        return (
+          nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
+          board[nr][nc] === null &&
+          board[mr][mc] && board[mr][mc] !== currentPlayer
+        );
+      });
     }
 
-    createBoard();
+    function checkGameEnd() {
+  let canCurrentPlayerMove = false;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c] === currentPlayer && canJump(r, c)) {
+        canCurrentPlayerMove = true;
+        break;
+      }
+    }
+    if (canCurrentPlayerMove) break;
+  }
+
+  if (!canCurrentPlayerMove) {
+    if (currentPlayer === "black") {
+      message.textContent = "You lose!";
+      alert("You lose!");
+    } else {
+      message.textContent = "You win!";
+      alert("You win!");
+    }
+    return true;
+  }
+
+  return false;
+}
+
+
+    function render() {
+      const cells = boardEl.children;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = cells[r * COLS + c];
+          cell.innerHTML = "";
+          const piece = board[r][c];
+          if (piece) {
+            const div = document.createElement("div");
+            div.classList.add(piece === "black" ? "black-piece" : "white-piece");
+            cell.appendChild(div);
+          }
+        }
+      }
+    }
+
+    initGame();
   </script>
 </body>
 </html>
