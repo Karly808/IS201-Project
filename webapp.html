@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game</title>
+  <style>
+    /* General Reset & Font */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #fde3f6, #ffffff);
+      color: #333;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Navigation Bar */
+    nav {
+      background-color: #2c3e50;
+      padding: 1rem 2rem;
+    }
+
+    /* Flex container for navbar */
+    #mainNav .container {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    /* Navbar Links */
+    .navbar-nav {
+      list-style: none;
+      display: flex;
+      justify-content: flex-end;
+      margin: 0;
+      padding: 0;
+    }
+
+    .navbar-nav li {
+      margin-left: 1.5rem;
+    }
+
+    .navbar-nav a {
+      color: #ecf0f1;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .navbar-nav a:hover {
+      color: #bdc3c7;
+    }
+
+    .navbar-toggler {
+      display: none;
+    }
+
+    /* Main Game Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .game-container {
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .cell {
+      background-color: #fff;
+      border: 2px solid #ccc;
+      font-size: 2rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background-color 0.2s ease;
+    }
+
+    .cell:hover {
+      background-color: #f9f9f9;
+    }
+
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #2980b9;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1c5985;
+    }
+
+    #message {
+      margin: 1rem 0;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+    <div class="container">
+      <ul class="navbar-nav">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="scratch.html">Interests</a></li>
+        <li><a href="webapp.html">Game</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="game-container">
+      <h2>Tic Tac Toe vs. Computer</h2>
+      <div id="board"></div>
+      <div id="message"></div>
+      <button onclick="resetGame()">Restart Game</button>
+    </div>
+  </div>
+
+  <script>
+    const board = document.getElementById('board');
+    const message = document.getElementById('message');
+    let cells = [];
+    let currentPlayer = 'X';
+    let gameOver = false;
+
+    function createBoard() {
+      board.innerHTML = '';
+      cells = [];
+      gameOver = false;
+      message.textContent = '';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => playerMove(i));
+        board.appendChild(cell);
+        cells.push('');
+      }
+    }
+
+    function playerMove(index) {
+      if (gameOver || cells[index] !== '') return;
+      cells[index] = 'X';
+      board.children[index].textContent = 'X';
+      if (checkWinner('X')) {
+        message.textContent = 'You win!';
+        gameOver = true;
+        return;
+      }
+      if (cells.every(cell => cell !== '')) {
+        message.textContent = 'It\'s a draw!';
+        gameOver = true;
+        return;
+      }
+      setTimeout(computerMove, 400);
+    }
+
+    function computerMove() {
+      if (gameOver) return;
+      let emptyIndices = cells.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+      let choice = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      cells[choice] = 'O';
+      board.children[choice].textContent = 'O';
+      if (checkWinner('O')) {
+        message.textContent = 'Computer wins!';
+        gameOver = true;
+        return;
+      }
+      if (cells.every(cell => cell !== '')) {
+        message.textContent = 'It\'s a draw!';
+        gameOver = true;
+      }
+    }
+
+    function checkWinner(player) {
+      const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      return winPatterns.some(pattern => 
+        pattern.every(i => cells[i] === player)
+      );
+    }
+
+    function resetGame() {
+      createBoard();
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
